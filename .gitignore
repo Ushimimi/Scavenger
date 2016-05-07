@@ -60,3 +60,4 @@ Scavenger/Intermediate/
 Scavenger/Content/StarterContent/
 *.db
 *.opendb
+Scavenger/Saved/
