@@ -56,3 +56,7 @@ Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+Scavenger/Intermediate/
+Scavenger/Content/StarterContent/
+*.db
+*.opendb
