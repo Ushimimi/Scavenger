@@ -48,14 +48,44 @@ void UScavengerController::StartRunning()
 	if (CMComponent) CMComponent->MaxWalkSpeed = RunningSpeed;
 }
 
+void UScavengerController::CoverButton()
+{
+	if (IsInCover) IsInCover = false;
+	else IsInCover = true;
+}
+
+void UScavengerController::EnterCover()
+{
+
+}
+
+void UScavengerController::LeaveCover()
+{
+
+}
+
+bool UScavengerController::GetCoverState()
+{
+	return IsInCover;
+}
+
+bool UScavengerController::GetIsCrouching()
+{
+	return IsCrouching;
+}
+
 void UScavengerController::FindInputComponent()
 {
 	// Find attached InputComponent
 	InputComponent = Owner->FindComponentByClass<UInputComponent>();
 	if (InputComponent)
 	{
+		//Walk Button
 		InputComponent->BindAction("Walk", IE_Pressed, this, &UScavengerController::StartWalking);
 		InputComponent->BindAction("Walk", IE_Released, this, &UScavengerController::StartRunning);
+
+		//Cover Button
+		InputComponent->BindAction("TakeCover", IE_Pressed, this, &UScavengerController::CoverButton);
 	}
 
 	CMComponent = Owner->FindComponentByClass<UCharacterMovementComponent>();
