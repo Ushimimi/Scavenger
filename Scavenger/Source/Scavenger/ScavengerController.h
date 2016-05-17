@@ -52,6 +52,7 @@ private:
 	// State tracking
 	bool IsInCover = false;
 	bool IsCrouching = false;
+	bool IsSprinting = false;
 	
 	// Methods for instance setup
 	void FindInputComponent();

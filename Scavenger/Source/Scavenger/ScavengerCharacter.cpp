@@ -54,6 +54,13 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 	InputComponent->BindAxis("MoveForward", this, &AScavengerCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AScavengerCharacter::MoveRight);
 
+	//Run Button
+	InputComponent->BindAction("Run", IE_Pressed, this, &AScavengerCharacter::StartRunning);
+	InputComponent->BindAction("Run", IE_Released, this, &AScavengerCharacter::StartWalking);
+
+	//Cover Button
+	//InputComponent->BindAction("TakeCover", IE_Pressed, this, &AScavengerCharacter::CoverButton);
+
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
 	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
@@ -65,8 +72,25 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 	// handle touch devices
 	InputComponent->BindTouch(IE_Pressed, this, &AScavengerCharacter::TouchStarted);
 	InputComponent->BindTouch(IE_Released, this, &AScavengerCharacter::TouchStopped);
+
+	WalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	RunSpeed = WalkSpeed * RunMultiplier;
 }
 
+void AScavengerCharacter::StartRunning()
+{
+	Running = true;
+	float OldSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+
+	UE_LOG(LogTemp, Warning, TEXT("Running! Old speed: %f, New speed: %f"), OldSpeed, GetCharacterMovement()->MaxWalkSpeed);
+}
+
+void AScavengerCharacter::StartWalking()
+{
+	Running = false;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
 
 void AScavengerCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {

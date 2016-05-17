@@ -2,7 +2,7 @@
 	"TargetName" : "ScavengerEditor",
 	"Platform" : "Win64",
 	"Configuration" : "Development",
-	"BuildId" : "249e813f-fbce-4b4c-bb6a-e5109e891a8e",
+	"BuildId" : "2a17ab72-9053-4d46-94af-5ba98f7e7093",
 	"Version" : 
 	{
 		"MajorVersion" : 4,
@@ -15,15 +15,15 @@
 	"BuildProducts" :
 	[
 		{
-			"Path" : "$(ProjectDir)\\Binaries\\Win64\\UE4Editor-Scavenger-3647.dll",
+			"Path" : "$(ProjectDir)\\Binaries\\Win64\\UE4Editor-Scavenger.dll",
 			"Type" : "DynamicLibrary"
 		},
 		{
-			"Path" : "$(ProjectDir)\\Binaries\\Win64\\UE4Editor-Scavenger-3647.pdb",
+			"Path" : "$(ProjectDir)\\Binaries\\Win64\\UE4Editor-Scavenger.pdb",
 			"Type" : "SymbolFile"
 		},
 		{
-			"Path" : "$(ProjectDir)\\Intermediate\\Build\\Win64\\UE4Editor\\Development\\UE4Editor-Scavenger-3647.lib",
+			"Path" : "$(ProjectDir)\\Intermediate\\Build\\Win64\\UE4Editor\\Development\\UE4Editor-Scavenger.lib",
 			"Type" : "ImportLibrary"
 		}
 	],

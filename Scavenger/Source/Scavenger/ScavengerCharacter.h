@@ -15,6 +15,7 @@ class AScavengerCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
 public:
 	AScavengerCharacter();
 
@@ -26,6 +27,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+private:
+	bool Running = false;
+	float RunSpeed = 0.0;
+	float WalkSpeed = 0.0;
+
+	UPROPERTY(EditAnywhere)
+	float RunMultiplier = 2.0;
+
 protected:
 
 	/** Called for forwards/backward input */
@@ -33,6 +42,9 @@ protected:
 
 	/** Called for side to side input */
 	void MoveRight(float Value);
+
+	void StartRunning();
+	void StartWalking();
 
 	/** 
 	 * Called via input to turn at a given rate. 

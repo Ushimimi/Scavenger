@@ -24,6 +24,7 @@ void UScavengerController::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
+	StartWalking();
 	FindInputComponent();
 }
 
@@ -38,13 +39,13 @@ void UScavengerController::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 void UScavengerController::StartWalking()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Begin walking."));
+	IsSprinting = false;
 	if (CMComponent) CMComponent->MaxWalkSpeed = WalkingSpeed;
 }
 
 void UScavengerController::StartRunning()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Stop walking."));
+	IsSprinting = true;
 	if (CMComponent) CMComponent->MaxWalkSpeed = RunningSpeed;
 }
 
@@ -80,14 +81,13 @@ void UScavengerController::FindInputComponent()
 	InputComponent = Owner->FindComponentByClass<UInputComponent>();
 	if (InputComponent)
 	{
-		//Walk Button
-		InputComponent->BindAction("Walk", IE_Pressed, this, &UScavengerController::StartWalking);
-		InputComponent->BindAction("Walk", IE_Released, this, &UScavengerController::StartRunning);
-
-		//Cover Button
-		InputComponent->BindAction("TakeCover", IE_Pressed, this, &UScavengerController::CoverButton);
+		
 	}
-
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s spawned without InputComponent! WTF"), *Owner->GetName());
+	}
+	
 	CMComponent = Owner->FindComponentByClass<UCharacterMovementComponent>();
 	if (!CMComponent)
 	{
@@ -95,4 +95,3 @@ void UScavengerController::FindInputComponent()
 		this->DestroyComponent();
 	}
 }
-
