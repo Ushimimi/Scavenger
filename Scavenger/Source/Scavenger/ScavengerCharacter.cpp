@@ -75,6 +75,13 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 
 	WalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 	RunSpeed = WalkSpeed * RunMultiplier;
+
+	MyCapsule = GetCapsuleComponent();
+
+	if (MyCapsule)
+	{
+		MyCapsule->OnComponentHit.AddDynamic(this, &AScavengerCharacter::OnHit);
+	}
 }
 
 void AScavengerCharacter::StartRunning()
@@ -147,5 +154,21 @@ void AScavengerCharacter::MoveRight(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
+	}
+}
+
+void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Bonk"));
+	if (OtherComp->ComponentHasTag("Cover"))
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Derp"));
+
+		//Get Impact Normal from Hit
+		//Compare it to movement vector
+
+		//Check if approach angle is less than the maximum angle to enter cover, to prevent drivebys
+		
+
 	}
 }

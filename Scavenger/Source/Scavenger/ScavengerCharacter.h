@@ -27,6 +27,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	UFUNCTION()
+	virtual void OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
 private:
 	bool Running = false;
 	float RunSpeed = 0.0;
@@ -34,6 +37,8 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float RunMultiplier = 2.0;
+
+	UCapsuleComponent* MyCapsule = nullptr;
 
 protected:
 
