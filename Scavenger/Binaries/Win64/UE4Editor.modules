@@ -1,8 +1,8 @@
 {
 	"Changelist" : 2946394,
-	"BuildId" : "2a17ab72-9053-4d46-94af-5ba98f7e7093",
+	"BuildId" : "b07b4d91-eeb5-4873-b25c-d3fa896182c2",
 	"Modules" : 
 	{
-		"Scavenger" : "UE4Editor-Scavenger-2386.dll"
+		"Scavenger" : "UE4Editor-Scavenger-1523.dll"
 	}
 }

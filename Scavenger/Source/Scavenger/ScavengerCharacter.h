@@ -1,6 +1,8 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 #pragma once
 #include "GameFramework/Character.h"
+#include "DrawDebugHelpers.h"
+
 #include "ScavengerCharacter.generated.h"
 
 UCLASS(config=Game)
@@ -36,6 +38,8 @@ public:
 	UFUNCTION()
 	virtual void OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
+	float AngleBetween(FVector a, FVector b);
+
 private:
 	bool Running = false;
 	bool OnGround = false;
@@ -45,6 +49,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float RunMultiplier = 2.0;
+
+	UPROPERTY(EditAnywhere)
+	int MaxCoverAngle = 30; // The angle at which movement into a cover wall will result in entering cover
 
 	UCapsuleComponent* MyCapsule = nullptr;
 

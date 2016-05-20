@@ -167,11 +167,29 @@ void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherCo
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Derp"));
 
-		//Get Impact Normal from Hit
-		//Compare it to movement vector
+		//Get Surface Normal of hit surface
+		FVector SurfaceNormal = Hit.Normal;
+
+		//Flatten it on the Z axis to prevent weirdness
+		SurfaceNormal.Z = 0.0f;
+		
+		//Compare it to movement vector, and align the surface vector to world space
+		FVector MoveVector = GetMovementComponent()->GetLastInputVector();
+		MoveVector.Z = 0;
+		SurfaceNormal.Normalize();
+		MoveVector.Normalize();
+		//SurfaceNormal += GetActorLocation();
+
+		DrawDebugLine(GetWorld(), Hit.ImpactPoint, Hit.ImpactPoint + SurfaceNormal*40.0f, FColor(255, 0, 0), false, 0.0f, 0, 10.0f);
+
+		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + MoveVector*40.0f, FColor(0, 255, 0), false, 0.0f, 0, 10.0f);
 
 		//Check if approach angle is less than the maximum angle to enter cover, to prevent drivebys
-		
+		float AngleFound = AngleBetween(MoveVector, SurfaceNormal * -1);
+		if (AngleFound < MaxCoverAngle)
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("EnteringCoverOhGodHelp, %f"), AngleFound);
+		}
 
 	}
 }
@@ -192,4 +210,14 @@ void AScavengerCharacter::Jump()
 		bPressedJump = true;
 		JumpKeyHoldTime = 0.0f;
 	}
+}
+
+float AScavengerCharacter::AngleBetween(FVector a, FVector b)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Vectors: %s, %s"), *a.ToString(), *b.ToString());
+	float ThisIsSparta;
+	ThisIsSparta = FMath::RadiansToDegrees(acosf(FVector::DotProduct(a, b)));
+
+	UE_LOG(LogTemp, Warning, TEXT("%s, %s - This is: %f"), *a.ToString(), *b.ToString(), ThisIsSparta);
+	return ThisIsSparta;
 }
