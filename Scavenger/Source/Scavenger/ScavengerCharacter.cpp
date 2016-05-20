@@ -80,6 +80,7 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 	RunSpeed = WalkSpeed * RunMultiplier;
 
 	MyCapsule = GetCapsuleComponent();
+	MyMove = FindComponentByClass<UCharacterMovementComponent>();
 
 	if (MyCapsule)
 	{
@@ -189,6 +190,8 @@ void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherCo
 		if (AngleFound < MaxCoverAngle)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("EnteringCoverOhGodHelp, %f"), AngleFound);
+			CurrentCoverDirection = SurfaceNormal * -1;
+			EnterCover();
 		}
 
 	}
@@ -201,6 +204,12 @@ void AScavengerCharacter::Tick(float DeltaTime)
 	if (GetCharacterMovement()->IsWalking()) OnGround = true;
 	else OnGround = false;
 
+	if (InCover)
+	{
+		SetActorRotation(FMath::RInterpConstantTo(GetActorRotation(), CurrentCoverDirection.Rotation(), GetWorld()->GetDeltaSeconds(), 640));
+		
+	}
+
 }
 
 void AScavengerCharacter::Jump()
@@ -210,6 +219,22 @@ void AScavengerCharacter::Jump()
 		bPressedJump = true;
 		JumpKeyHoldTime = 0.0f;
 	}
+}
+
+void AScavengerCharacter::EnterCover()
+{
+	//SetActorRotation(GetActorRotation().)
+	InCover = true;
+	
+	if (MyMove)
+	{
+		MyMove->bOrientRotationToMovement = false;
+	}
+}
+
+bool AScavengerCharacter::IsInCover()
+{
+	return InCover;
 }
 
 float AScavengerCharacter::AngleBetween(FVector a, FVector b)

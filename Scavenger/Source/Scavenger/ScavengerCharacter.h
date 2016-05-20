@@ -27,6 +27,12 @@ public:
 	// Jump override to fix buggy UE code
 	virtual void Jump() override;
 
+	//virtual void Crouch();
+	virtual void EnterCover();
+
+	UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
+	bool IsInCover(); // Getter for cover state
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
@@ -44,6 +50,12 @@ private:
 	bool Running = false;
 	bool OnGround = false;
 
+	bool InCover = false;
+
+	bool Crouched = false;
+
+	FVector CurrentCoverDirection;
+
 	float RunSpeed = 0.0;
 	float WalkSpeed = 0.0;
 
@@ -54,6 +66,7 @@ private:
 	int MaxCoverAngle = 30; // The angle at which movement into a cover wall will result in entering cover
 
 	UCapsuleComponent* MyCapsule = nullptr;
+	UCharacterMovementComponent* MyMove = nullptr;
 
 protected:
 
