@@ -8,6 +8,9 @@
 
 AScavengerCharacter::AScavengerCharacter()
 {
+	// Set up a tick so we can do stuff here where it's less messy than in a separate component
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -170,5 +173,23 @@ void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherCo
 		//Check if approach angle is less than the maximum angle to enter cover, to prevent drivebys
 		
 
+	}
+}
+
+void AScavengerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime); // Call parent class tick function  
+
+	if (GetCharacterMovement()->IsWalking()) OnGround = true;
+	else OnGround = false;
+
+}
+
+void AScavengerCharacter::Jump()
+{
+	if (OnGround)
+	{
+		bPressedJump = true;
+		JumpKeyHoldTime = 0.0f;
 	}
 }

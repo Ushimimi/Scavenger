@@ -19,6 +19,12 @@ class AScavengerCharacter : public ACharacter
 public:
 	AScavengerCharacter();
 
+	// Tick method declaration
+	virtual void Tick(float DeltaTime);
+
+	// Jump override to fix buggy UE code
+	virtual void Jump() override;
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
@@ -32,6 +38,8 @@ public:
 
 private:
 	bool Running = false;
+	bool OnGround = false;
+
 	float RunSpeed = 0.0;
 	float WalkSpeed = 0.0;
 
