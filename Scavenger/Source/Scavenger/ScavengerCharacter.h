@@ -55,17 +55,41 @@ public:
 
 private:
 	bool Running = false;
+	bool Aiming = false;
 	bool OnGround = false;
 	bool OnEdgeLeft = false;
 	bool OnEdgeRight = false;
+	bool EdgeAdjustedLeft = false;
+	bool EdgeAdjustedRight = false;
 
 	FVector CurrentCoverDirection;
 
 	float RunSpeed = 0.0;
 	float WalkSpeed = 0.0;
 
+	int EnterCoverTimer = 0;
+
+	// Time required in frames before cover is entered or exited
+	UPROPERTY(EditAnywhere)
+	int EnterCoverHoldTime = 10;
+
+	// Range of the ray traces that check for cover
+	UPROPERTY(EditAnywhere)
+	float CoverSenseDistance = 60.0;
+
+	// Multiplier for running speed
 	UPROPERTY(EditAnywhere)
 	float RunMultiplier = 2.0;
+
+	//Camera Boom distance when aiming
+	UPROPERTY(EditAnywhere)
+	float AimZoomDistance = 150.0;
+
+	//Amount of offset to apply (reversed for left side) when aiming
+	UPROPERTY(EditAnywhere)
+	float AimOffsetAmount = 50.0;
+
+	float StoredAimZoomDistance = 300.0;
 
 	UPROPERTY(EditAnywhere)
 	int MaxCoverAngle = 30; // The angle at which movement into a cover wall will result in entering cover
@@ -74,6 +98,7 @@ private:
 	UCharacterMovementComponent* MyMove = nullptr;
 
 	void StickToCover();
+	bool CheckIsMovementAllowed(FVector Direction, float Value);
 
 protected:
 

@@ -90,10 +90,18 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 	{
 		MyCapsule->OnComponentHit.AddDynamic(this, &AScavengerCharacter::OnHit);
 	}
+
+	if (GetCameraBoom())
+	{
+		StoredAimZoomDistance = GetCameraBoom()->TargetArmLength;
+	}
 }
 
 void AScavengerCharacter::StartRunning()
 {
+	if (Aiming) StopAiming();
+	if (InCoverCPP) ExitCover();
+
 	Running = true;
 	float OldSpeed = GetCharacterMovement()->MaxWalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
@@ -146,7 +154,7 @@ void AScavengerCharacter::MoveForward(float Value)
 
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, Value);
+		if (CheckIsMovementAllowed(Direction, Value)) AddMovementInput(Direction, Value);
 	}
 }
 
@@ -161,8 +169,55 @@ void AScavengerCharacter::MoveRight(float Value)
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
-		AddMovementInput(Direction, Value);
+		if (CheckIsMovementAllowed(Direction, Value)) AddMovementInput(Direction, Value);
 	}
+}
+
+bool AScavengerCharacter::CheckIsMovementAllowed(FVector Direction, float Value)
+{
+	if (InCoverCPP)
+	{
+		// Check if we are trying to leave cover by pulling off
+		float AngleFound = AngleBetween(MyMove->GetLastInputVector(), -CurrentCoverDirection);
+		if (AngleFound <= MaxCoverAngle)
+		{
+			EnterCoverTimer++;
+			if (EnterCoverTimer >= EnterCoverHoldTime)
+			{
+				ExitCover();
+			}
+		}
+
+		//Set up Query Parameters
+		FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
+
+		// Ray-Cast our Grabber Ray
+		FHitResult LeftHit;
+		FHitResult RightHit;
+
+		FVector LocationPlusMovementLeft = GetActorLocation() + (Direction) + GetActorRightVector() * -40.0;
+		FVector LocationPlusMovementRight = GetActorLocation() + (Direction) + GetActorRightVector() * 40.0;
+
+		GetWorld()->LineTraceSingleByObjectType(
+			LeftHit,
+			LocationPlusMovementLeft,
+			LocationPlusMovementLeft + CurrentCoverDirection * CoverSenseDistance,
+			FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+			TraceParameters
+		);
+
+		GetWorld()->LineTraceSingleByObjectType(
+			RightHit,
+			LocationPlusMovementRight,
+			LocationPlusMovementRight + CurrentCoverDirection * CoverSenseDistance,
+			FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+			TraceParameters
+		);
+
+		if (!LeftHit.GetComponent() || !RightHit.GetComponent()) return false;
+	}
+
+	return true;
 }
 
 void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -189,11 +244,15 @@ void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherCo
 
 		//Check if approach angle is less than the maximum angle to enter cover, to prevent drivebys
 		float AngleFound = AngleBetween(MoveVector, SurfaceNormal * -1);
-		if (AngleFound < MaxCoverAngle)
+		if (AngleFound < MaxCoverAngle && InCoverCPP == false)
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("EnteringCoverOhGodHelp, %f"), AngleFound);
-			CurrentCoverDirection = SurfaceNormal * -1;
-			EnterCover();
+			EnterCoverTimer++;
+			if (EnterCoverTimer >= EnterCoverHoldTime)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("EnteringCoverOhGodHelp, %f"), AngleFound);
+				CurrentCoverDirection = SurfaceNormal * -1;
+				EnterCover();
+			}
 		}
 
 	}
@@ -215,8 +274,6 @@ void AScavengerCharacter::Tick(float DeltaTime)
 
 	FVector MoveVector = GetMovementComponent()->GetLastInputVector();
 	MoveVector.Normalize();
-	
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + MoveVector*200.0f, FColor(0, 255, 0), false, 0.0f, 0, 10.0f);
 }
 
 void AScavengerCharacter::StickToCover()
@@ -225,39 +282,94 @@ void AScavengerCharacter::StickToCover()
 	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
 
 	// Ray-Cast our Grabber Ray
-	FHitResult Hit;
+	FHitResult LeftHit;
+	FHitResult RightHit;
 
-	FVector LocationPlusMovement = GetActorLocation() + (GetMovementComponent()->GetLastInputVector());
+	FVector LocationPlusMovementLeft = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * -41.0;
+	FVector LocationPlusMovementRight = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * 41.0;
 
 	GetWorld()->LineTraceSingleByObjectType(
-		Hit,
-		LocationPlusMovement,
-		LocationPlusMovement + CurrentCoverDirection * 80.0,
+		LeftHit,
+		LocationPlusMovementLeft,
+		LocationPlusMovementLeft + CurrentCoverDirection * CoverSenseDistance,
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
 		TraceParameters
 	);
 
-	if (Hit.GetComponent())
-	{
-		if (Hit.GetComponent()->ComponentHasTag("Cover"))
-		{
+	GetWorld()->LineTraceSingleByObjectType(
+		RightHit,
+		LocationPlusMovementRight,
+		LocationPlusMovementRight + CurrentCoverDirection * CoverSenseDistance,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+		TraceParameters
+	);
 
+	DrawDebugLine(GetWorld(), LocationPlusMovementLeft, LocationPlusMovementLeft + CurrentCoverDirection * CoverSenseDistance, FColor(0, 255, 0), false, 0.0f, 0, 3.0f);
+	DrawDebugLine(GetWorld(), LocationPlusMovementRight, LocationPlusMovementRight + CurrentCoverDirection * CoverSenseDistance, FColor(0, 255, 0), false, 0.0f, 0, 3.0f);
+
+	if (LeftHit.GetComponent())
+	{
+		if (LeftHit.GetComponent()->ComponentHasTag("Cover"))
+		{
+			OnEdgeLeft = false;
 		}
 		else
 		{
 			// No cover found! Must be at the end. 
-			MyMove->StopMovementImmediately();
+			OnEdgeLeft = true;
 		}
 	}
 	else
 	{
 		// No cover found! Must be at the end. 
-		MyMove->StopMovementImmediately();
+		OnEdgeLeft = true;
+	}
+
+	if (RightHit.GetComponent())
+	{
+		if (RightHit.GetComponent()->ComponentHasTag("Cover"))
+		{
+			OnEdgeRight = false;
+		}
+		else
+		{
+			// No cover found! Must be at the end. 
+			OnEdgeRight = true;
+		}
+	}
+	else
+	{
+		// No cover found! Must be at the end. 
+		OnEdgeRight = true;
+	}
+
+	if (OnEdgeLeft == false && OnEdgeRight == false)
+	{
+		EdgeAdjustedLeft = false;
+		EdgeAdjustedRight = false;
+	}
+
+	if (OnEdgeLeft == true && OnEdgeRight == true)
+	{
+		ExitCover();
+	}
+
+	if (OnEdgeLeft == true)
+	{
+		AddMovementInput(GetActorRightVector(), 1.0f);
+		EdgeAdjustedLeft = true;
+	}
+
+	if (OnEdgeRight == true)
+	{
+		AddMovementInput(GetActorRightVector(), -1.0f);
+		EdgeAdjustedRight = true;
 	}
 }
 
 void AScavengerCharacter::Jump()
 {
+	if (Aiming) StopAiming();
 	if (OnGround)
 	{
 		bPressedJump = true;
@@ -268,27 +380,66 @@ void AScavengerCharacter::Jump()
 
 void AScavengerCharacter::StartAiming()
 {
+	if (Running) return;
+
 	if (InCoverCPP)
 	{
-		// If on a corner
-			// Pop out
-		ExitCover();
-
+		if (GetCameraBoom())
+		{
+			if (EdgeAdjustedLeft)
+			{
+				GetCameraBoom()->SocketOffset.Y = -AimOffsetAmount;
+			}
+			else if (EdgeAdjustedRight)
+			{
+				GetCameraBoom()->SocketOffset.Y = AimOffsetAmount;
+			}
+			else return; //Can't aim, no edges
+		}
+		//ExitCover();
 	}
+
+	if (GetCameraBoom())
+	{
+		if (!InCoverCPP) GetCameraBoom()->SocketOffset.Y = AimOffsetAmount;
+		GetCameraBoom()->TargetArmLength = AimZoomDistance;
+		MyMove->bOrientRotationToMovement = false;
+		bUseControllerRotationYaw = true;		
+	}
+
+	Aiming = true;
 }
 
 void AScavengerCharacter::StopAiming()
 {
+
 	if (InCoverCPP)
 	{
 		// If on a corner
 			// Go back under cover
 	}
+
+	if (GetCameraBoom())
+	{
+		GetCameraBoom()->TargetArmLength = StoredAimZoomDistance;
+		MyMove->bOrientRotationToMovement = true;
+		bUseControllerRotationYaw = false;
+		GetCameraBoom()->SocketOffset.Y = 0.0f;
+	}
+
+	Aiming = false;
 }
 
 void AScavengerCharacter::ExitCover()
 {
+	CrouchedCPP = false;
+	EnterCoverTimer = 0;
+
 	InCoverCPP = false;
+	OnEdgeLeft = false;
+	OnEdgeRight = false;
+	EdgeAdjustedLeft = false;
+	EdgeAdjustedRight = false;
 
 	if (MyMove)
 	{
@@ -299,15 +450,47 @@ void AScavengerCharacter::ExitCover()
 
 void AScavengerCharacter::EnterCover()
 {
-	//SetActorRotation(GetActorRotation().)
-	InCoverCPP = true;
-	
-	if (MyMove)
+	CrouchedCPP = true;
+	EnterCoverTimer = 0;
+	//Set up Query Parameters
+	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
+
+	// Ray-Cast our Grabber Ray
+	FHitResult LeftHit;
+	FHitResult RightHit;
+
+	FVector LocationPlusMovementLeft = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * -40.0;
+	FVector LocationPlusMovementRight = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * 40.0;
+
+	GetWorld()->LineTraceSingleByObjectType(
+		LeftHit,
+		LocationPlusMovementLeft,
+		LocationPlusMovementLeft + CurrentCoverDirection * CoverSenseDistance,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+		TraceParameters
+	);
+
+	GetWorld()->LineTraceSingleByObjectType(
+		RightHit,
+		LocationPlusMovementRight,
+		LocationPlusMovementRight + CurrentCoverDirection * CoverSenseDistance,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+		TraceParameters
+	);
+
+	if (LeftHit.GetComponent() && RightHit.GetComponent())
 	{
-		MyMove->bOrientRotationToMovement = false;
-		MyMove->SetPlaneConstraintNormal(CurrentCoverDirection);
-		MyMove->bConstrainToPlane = true;
+		//SetActorRotation(GetActorRotation().)
+		InCoverCPP = true;
+
+		if (MyMove)
+		{
+			MyMove->bOrientRotationToMovement = false;
+			MyMove->SetPlaneConstraintNormal(CurrentCoverDirection);
+			MyMove->bConstrainToPlane = true;
+		}
 	}
+	else return;
 }
 
 /*bool AScavengerCharacter::IsInCover()
