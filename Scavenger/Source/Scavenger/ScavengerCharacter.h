@@ -1,11 +1,12 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 #pragma once
+
 #include "GameFramework/Character.h"
 #include "DrawDebugHelpers.h"
 
 #include "ScavengerCharacter.generated.h"
 
-UCLASS(config=Game)
+UCLASS(Config = game, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Blueprintable, BlueprintType)
 class AScavengerCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -30,8 +31,8 @@ public:
 	//virtual void Crouch();
 	virtual void EnterCover();
 
-	UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
-	bool IsInCover(); // Getter for cover state
+	//UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
+	//bool IsInCover(); // Getter for cover state
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -46,13 +47,17 @@ public:
 
 	float AngleBetween(FVector a, FVector b);
 
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category=Custom)
+	bool InCoverCPP = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	bool CrouchedCPP = false;
+
 private:
 	bool Running = false;
 	bool OnGround = false;
-
-	bool InCover = false;
-
-	bool Crouched = false;
+	bool OnEdgeLeft = false;
+	bool OnEdgeRight = false;
 
 	FVector CurrentCoverDirection;
 
@@ -68,6 +73,8 @@ private:
 	UCapsuleComponent* MyCapsule = nullptr;
 	UCharacterMovementComponent* MyMove = nullptr;
 
+	void StickToCover();
+
 protected:
 
 	/** Called for forwards/backward input */
@@ -78,6 +85,10 @@ protected:
 
 	void StartRunning();
 	void StartWalking();
+
+	void ExitCover();
+	void StartAiming();
+	void StopAiming();
 
 	/** 
 	 * Called via input to turn at a given rate. 

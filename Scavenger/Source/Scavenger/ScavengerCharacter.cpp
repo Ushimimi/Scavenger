@@ -61,6 +61,10 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 	InputComponent->BindAction("Run", IE_Pressed, this, &AScavengerCharacter::StartRunning);
 	InputComponent->BindAction("Run", IE_Released, this, &AScavengerCharacter::StartWalking);
 
+	//Aim Button
+	InputComponent->BindAction("Aim", IE_Pressed, this, &AScavengerCharacter::StartAiming);
+	InputComponent->BindAction("Aim", IE_Released, this, &AScavengerCharacter::StopAiming);
+
 	//Cover Button
 	//InputComponent->BindAction("TakeCover", IE_Pressed, this, &AScavengerCharacter::CoverButton);
 
@@ -81,7 +85,7 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 
 	MyCapsule = GetCapsuleComponent();
 	MyMove = FindComponentByClass<UCharacterMovementComponent>();
-
+	
 	if (MyCapsule)
 	{
 		MyCapsule->OnComponentHit.AddDynamic(this, &AScavengerCharacter::OnHit);
@@ -181,9 +185,7 @@ void AScavengerCharacter::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherCo
 		MoveVector.Normalize();
 		//SurfaceNormal += GetActorLocation();
 
-		DrawDebugLine(GetWorld(), Hit.ImpactPoint, Hit.ImpactPoint + SurfaceNormal*40.0f, FColor(255, 0, 0), false, 0.0f, 0, 10.0f);
-
-		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + MoveVector*40.0f, FColor(0, 255, 0), false, 0.0f, 0, 10.0f);
+		//DrawDebugLine(GetWorld(), Hit.ImpactPoint, Hit.ImpactPoint + SurfaceNormal*40.0f, FColor(255, 0, 0), false, 0.0f, 0, 10.0f);
 
 		//Check if approach angle is less than the maximum angle to enter cover, to prevent drivebys
 		float AngleFound = AngleBetween(MoveVector, SurfaceNormal * -1);
@@ -204,12 +206,54 @@ void AScavengerCharacter::Tick(float DeltaTime)
 	if (GetCharacterMovement()->IsWalking()) OnGround = true;
 	else OnGround = false;
 
-	if (InCover)
+	if (InCoverCPP)
 	{
 		SetActorRotation(FMath::RInterpConstantTo(GetActorRotation(), CurrentCoverDirection.Rotation(), GetWorld()->GetDeltaSeconds(), 640));
 		
+		StickToCover();
 	}
 
+	FVector MoveVector = GetMovementComponent()->GetLastInputVector();
+	MoveVector.Normalize();
+	
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + MoveVector*200.0f, FColor(0, 255, 0), false, 0.0f, 0, 10.0f);
+}
+
+void AScavengerCharacter::StickToCover()
+{
+	//Set up Query Parameters
+	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
+
+	// Ray-Cast our Grabber Ray
+	FHitResult Hit;
+
+	FVector LocationPlusMovement = GetActorLocation() + (GetMovementComponent()->GetLastInputVector());
+
+	GetWorld()->LineTraceSingleByObjectType(
+		Hit,
+		LocationPlusMovement,
+		LocationPlusMovement + CurrentCoverDirection * 80.0,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+		TraceParameters
+	);
+
+	if (Hit.GetComponent())
+	{
+		if (Hit.GetComponent()->ComponentHasTag("Cover"))
+		{
+
+		}
+		else
+		{
+			// No cover found! Must be at the end. 
+			MyMove->StopMovementImmediately();
+		}
+	}
+	else
+	{
+		// No cover found! Must be at the end. 
+		MyMove->StopMovementImmediately();
+	}
 }
 
 void AScavengerCharacter::Jump()
@@ -219,23 +263,57 @@ void AScavengerCharacter::Jump()
 		bPressedJump = true;
 		JumpKeyHoldTime = 0.0f;
 	}
+	if (InCoverCPP) ExitCover();
+}
+
+void AScavengerCharacter::StartAiming()
+{
+	if (InCoverCPP)
+	{
+		// If on a corner
+			// Pop out
+		ExitCover();
+
+	}
+}
+
+void AScavengerCharacter::StopAiming()
+{
+	if (InCoverCPP)
+	{
+		// If on a corner
+			// Go back under cover
+	}
+}
+
+void AScavengerCharacter::ExitCover()
+{
+	InCoverCPP = false;
+
+	if (MyMove)
+	{
+		MyMove->bOrientRotationToMovement = true;
+		MyMove->bConstrainToPlane = false;
+	}
 }
 
 void AScavengerCharacter::EnterCover()
 {
 	//SetActorRotation(GetActorRotation().)
-	InCover = true;
+	InCoverCPP = true;
 	
 	if (MyMove)
 	{
 		MyMove->bOrientRotationToMovement = false;
+		MyMove->SetPlaneConstraintNormal(CurrentCoverDirection);
+		MyMove->bConstrainToPlane = true;
 	}
 }
 
-bool AScavengerCharacter::IsInCover()
+/*bool AScavengerCharacter::IsInCover()
 {
 	return InCover;
-}
+}*/
 
 float AScavengerCharacter::AngleBetween(FVector a, FVector b)
 {
@@ -243,6 +321,6 @@ float AScavengerCharacter::AngleBetween(FVector a, FVector b)
 	float ThisIsSparta;
 	ThisIsSparta = FMath::RadiansToDegrees(acosf(FVector::DotProduct(a, b)));
 
-	UE_LOG(LogTemp, Warning, TEXT("%s, %s - This is: %f"), *a.ToString(), *b.ToString(), ThisIsSparta);
+	//UE_LOG(LogTemp, Warning, TEXT("%s, %s - This is: %f"), *a.ToString(), *b.ToString(), ThisIsSparta);
 	return ThisIsSparta;
 }
