@@ -53,8 +53,19 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
 	bool CrouchedCPP = false;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	bool CoverFacingRightCPP = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	bool IsDashingCPP = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	bool IsPoppedOutCPP = false;
+
 private:
 	bool Running = false;
+	bool RunKeyPressed = false;
+	bool Dashing = false;
 	bool Aiming = false;
 	bool OnGround = false;
 	bool OnEdgeLeft = false;
@@ -63,11 +74,27 @@ private:
 	bool EdgeAdjustedRight = false;
 
 	FVector CurrentCoverDirection;
+	FVector LastFramePosition;
+	FVector DashDirection;
 
 	float RunSpeed = 0.0;
 	float WalkSpeed = 0.0;
 
 	int EnterCoverTimer = 0;
+	int DashTimer = 0;
+	int DashCooldownTimer = 0;
+
+	// Number of frames to dash, when dash is executed
+	UPROPERTY(EditAnywhere)
+	int DashDuration = 30;
+
+	// Number of frames before dash can be re-executed
+	UPROPERTY(EditAnywhere)
+	int DashCooldown = 60;
+
+	// Amount of force to add when dashing
+	UPROPERTY(EditAnywhere)
+	float DashForce = 2.0;
 
 	// Time required in frames before cover is entered or exited
 	UPROPERTY(EditAnywhere)
@@ -81,6 +108,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	float RunMultiplier = 2.0;
 
+	// Max dashing speed
+	UPROPERTY(EditAnywhere)
+	float DashSpeed = 600.0;
+
 	//Camera Boom distance when aiming
 	UPROPERTY(EditAnywhere)
 	float AimZoomDistance = 150.0;
@@ -89,7 +120,11 @@ private:
 	UPROPERTY(EditAnywhere)
 	float AimOffsetAmount = 50.0;
 
+	float TargetAimOffsetAmount = 0.0;
+	float CameraTrackSpeed = 8.0;
+
 	float StoredAimZoomDistance = 300.0;
+	float TargetAimZoomDistance = 0.0;
 
 	UPROPERTY(EditAnywhere)
 	int MaxCoverAngle = 30; // The angle at which movement into a cover wall will result in entering cover
@@ -99,6 +134,10 @@ private:
 
 	void StickToCover();
 	bool CheckIsMovementAllowed(FVector Direction, float Value);
+	bool IsCoverStandable();
+
+	void UpdateCamera();
+
 
 protected:
 
@@ -114,6 +153,9 @@ protected:
 	void ExitCover();
 	void StartAiming();
 	void StopAiming();
+	void StartDash();
+	void StopDash();
+	void ExecuteDash();
 
 	/** 
 	 * Called via input to turn at a given rate. 
