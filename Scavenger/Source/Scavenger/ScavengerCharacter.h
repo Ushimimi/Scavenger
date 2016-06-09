@@ -4,6 +4,8 @@
 #include "GameFramework/Character.h"
 #include "DrawDebugHelpers.h"
 
+#include <gun.h>
+
 #include "ScavengerCharacter.generated.h"
 
 UCLASS(Config = game, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Blueprintable, BlueprintType)
@@ -24,6 +26,7 @@ public:
 
 	// Tick method declaration
 	virtual void Tick(float DeltaTime);
+	virtual void BeginPlay();
 
 	// Jump override to fix buggy UE code
 	virtual void Jump() override;
@@ -61,6 +64,25 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
 	bool IsPoppedOutCPP = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	bool IsAimingCPP = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	float AimPitchCPP = 0.0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	float AimYawCPP = 0.0;
+
+	// BP Editor Objects
+	
+	// Weapon to spawn with
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BP Classes")
+	UClass* WeaponBPClass;
+
+	// Object Pointers
+
+	AGun* EquippedWeapon;
 
 private:
 	bool Running = false;
@@ -104,6 +126,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	float CoverSenseDistance = 60.0;
 
+	// Half of the width of the cover-sensing rays (distance from player location to scan right or left against the wall
+	UPROPERTY(EditAnywhere)
+	int CoverHalfWidth = 30;
+
 	// Multiplier for running speed
 	UPROPERTY(EditAnywhere)
 	float RunMultiplier = 2.0;
@@ -137,6 +163,7 @@ private:
 	bool IsCoverStandable();
 
 	void UpdateCamera();
+	void UpdateAiming();
 
 
 protected:

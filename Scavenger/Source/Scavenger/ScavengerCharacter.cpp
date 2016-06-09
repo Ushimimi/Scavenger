@@ -136,8 +136,12 @@ void AScavengerCharacter::StartDash()
 	ExitCover();
 	DashTimer = 0;
 	Dashing = true;
-	FVector MoveVector = GetMovementComponent()->GetLastInputVector();
-	MoveVector.Normalize();
+	//FVector MoveVector = GetMovementComponent()->GetLastInputVector();
+	//MoveVector.Normalize();
+
+	FVector MoveVector = GetActorRightVector();
+
+	if (!CoverFacingRightCPP) MoveVector *= -1;
 	
 	GetCharacterMovement()->MaxWalkSpeed = DashSpeed;
 	DashDirection = MoveVector;
@@ -162,8 +166,6 @@ void AScavengerCharacter::StopDash()
 	DashTimer = 0;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	IsDashingCPP = false;
-
-	//EnterCover();
 	
 	if (!InCoverCPP)
 	{
@@ -333,11 +335,56 @@ void AScavengerCharacter::UpdateCamera()
 	}
 }
 
+void AScavengerCharacter::UpdateAiming()
+{
+	float DerpAim = GetControlRotation().Pitch;
+	
+	if (DerpAim > 180.0) DerpAim -= 360.0;
+
+	AimPitchCPP = DerpAim;
+
+	if (IsPoppedOutCPP)
+	{
+		//float AngleOffset = AngleBetween(CurrentCoverDirection, GetControlRotation().Vector());
+
+		float AngleOffset = GetControlRotation().Yaw - GetActorRotation().Yaw;
+
+		if (AngleOffset > 180.0) AngleOffset -= 360.0;
+
+		//UE_LOG(LogTemp, Warning, TEXT("Current Offset: %f"), AngleOffset);
+		AimYawCPP = AngleOffset;
+	}
+	else AimYawCPP = 0.0;
+}
+
+void AScavengerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("Derp"));
+
+	UWorld* const World = GetWorld();
+
+	if (World) {
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Instigator = this;
+		EquippedWeapon = World->SpawnActor<AGun>(WeaponBPClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+	}
+
+	FName fnWeaponSocket = TEXT("RHand_Socket");
+
+	EquippedWeapon->AttachRootComponentTo(GetMesh(),fnWeaponSocket, EAttachLocation::SnapToTarget, true);
+}
+
 void AScavengerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime); // Call parent class tick function  
 
+	//Set blueprint aiming value every frame. May change this later in case I need to time it differently
+	IsAimingCPP = Aiming;
+
 	UpdateCamera();
+	UpdateAiming();
 
 	if (GetCharacterMovement()->IsWalking()) OnGround = true;
 	else OnGround = false;
@@ -388,8 +435,8 @@ void AScavengerCharacter::StickToCover()
 	//FVector LocationPlusMovementLeft = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * -41.0;
 	//FVector LocationPlusMovementRight = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * 41.0;
 
-	FVector LocationPlusMovementLeft = GetActorLocation() + GetActorRightVector() * -40.0;
-	FVector LocationPlusMovementRight = GetActorLocation() + GetActorRightVector() * 40.0;
+	FVector LocationPlusMovementLeft = GetActorLocation() + GetActorRightVector() * -CoverHalfWidth;
+	FVector LocationPlusMovementRight = GetActorLocation() + GetActorRightVector() * CoverHalfWidth;
 
 	GetWorld()->LineTraceSingleByObjectType(
 		LeftHit,
@@ -458,8 +505,8 @@ void AScavengerCharacter::StickToCover()
 
 	// Ray cast a second time, to see if we are close enough to the edges to pop out
 
-	LocationPlusMovementLeft = GetActorLocation() + GetActorRightVector() * -50.0;
-	LocationPlusMovementRight = GetActorLocation() + GetActorRightVector() * 50.0;
+	LocationPlusMovementLeft = GetActorLocation() + GetActorRightVector() * CoverHalfWidth * -1.25;
+	LocationPlusMovementRight = GetActorLocation() + GetActorRightVector() * CoverHalfWidth * 1.25;
 
 	GetWorld()->LineTraceSingleByObjectType(
 		LeftHit,
@@ -493,7 +540,9 @@ void AScavengerCharacter::StickToCover()
 
 void AScavengerCharacter::Jump()
 {
-	if (Aiming) StopAiming();
+	//if (Aiming) StopAiming();
+	if (Dashing) return;
+
 	if (OnGround)
 	{
 		bPressedJump = true;
@@ -505,6 +554,7 @@ void AScavengerCharacter::Jump()
 void AScavengerCharacter::StartAiming()
 {
 	if (Running) return;
+	if (Dashing) return;
 
 	if (InCoverCPP)
 	{
@@ -513,11 +563,13 @@ void AScavengerCharacter::StartAiming()
 			if (EdgeAdjustedLeft)
 			{
 				TargetAimOffsetAmount = -AimOffsetAmount;
+				CoverFacingRightCPP = false; 
 				IsPoppedOutCPP = true;
 			}
 			else if (EdgeAdjustedRight)
 			{
 				TargetAimOffsetAmount = AimOffsetAmount;
+				CoverFacingRightCPP = true;
 				IsPoppedOutCPP = true;
 			}
 			else return; //Can't aim, no edges
@@ -606,8 +658,8 @@ void AScavengerCharacter::EnterCover()
 	FHitResult LeftHit;
 	FHitResult RightHit;
 
-	FVector LocationPlusMovementLeft = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * -40.0;
-	FVector LocationPlusMovementRight = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * 40.0;
+	FVector LocationPlusMovementLeft = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * -CoverHalfWidth;
+	FVector LocationPlusMovementRight = GetActorLocation() + (GetMovementComponent()->GetLastInputVector()) + GetActorRightVector() * CoverHalfWidth;
 
 	GetWorld()->LineTraceSingleByObjectType(
 		LeftHit,
