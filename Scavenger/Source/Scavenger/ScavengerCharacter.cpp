@@ -65,6 +65,8 @@ void AScavengerCharacter::SetupPlayerInputComponent(class UInputComponent* Input
 	InputComponent->BindAction("Aim", IE_Pressed, this, &AScavengerCharacter::StartAiming);
 	InputComponent->BindAction("Aim", IE_Released, this, &AScavengerCharacter::StopAiming);
 
+	InputComponent->BindAction("TakeCover", IE_Pressed, this, &AScavengerCharacter::Die);
+
 	//Cover Button
 	//InputComponent->BindAction("TakeCover", IE_Pressed, this, &AScavengerCharacter::CoverButton);
 
@@ -355,6 +357,13 @@ void AScavengerCharacter::UpdateAiming()
 		AimYawCPP = AngleOffset;
 	}
 	else AimYawCPP = 0.0;
+}
+
+void AScavengerCharacter::Die()
+{
+	IsDeadCPP = true;
+	
+	
 }
 
 void AScavengerCharacter::BeginPlay()

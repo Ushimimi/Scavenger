@@ -69,6 +69,9 @@ public:
 	bool IsAimingCPP = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	bool IsDeadCPP = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
 	float AimPitchCPP = 0.0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
@@ -164,6 +167,8 @@ private:
 
 	void UpdateCamera();
 	void UpdateAiming();
+
+	void Die();
 
 
 protected:
