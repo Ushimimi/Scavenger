@@ -21,6 +21,74 @@ class AScavengerCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	virtual void LocalStartAiming();
+	virtual void LocalStopAiming();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void StartRunning();
+	bool StartRunning_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void StartWalking();
+	bool StartWalking_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void EnterCover(FVector LastMoveVector, FVector CurrentCover);
+	bool EnterCover_Validate(FVector LastMoveVector, FVector CurrentCover);
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void ExitCover();
+	bool ExitCover_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void StartAiming();
+	bool StartAiming_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void StopAiming();
+	bool StopAiming_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void StartDash();
+	bool StartDash_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void StopDash();
+	bool StopDash_Validate();
+
+	virtual void ExecuteDash();
+		
+	virtual void StickToCover();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void Die();
+	bool Die_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void ServerAdjustActorLocation(FVector NewPos);
+	bool ServerAdjustActorLocation_Validate(FVector NewPos);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerSetAimPitch(float NewPitch);
+	bool ServerSetAimPitch_Validate(float NewPitch);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerSetAimYaw(float NewYaw);
+	bool ServerSetAimYaw_Validate(float NewYaw);
+
+	UFUNCTION(Client, Reliable)
+		virtual void ClientUpdateWalkSpeed(float NewSpeed);
+
+	UFUNCTION(Client, Reliable)
+		virtual void ClientUpdateEdges(bool LeftEdge, bool RightEdge);
+
+	UFUNCTION(Client, Reliable)
+		virtual void ClientOrientRotationToMovement(bool Incoming);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		virtual void ServerSetCoverState(bool FacingRight, bool PoppedOut);
+		bool ServerSetCoverState_Validate(bool FacingRight, bool PoppedOut);
+
 public:
 	AScavengerCharacter();
 
@@ -30,9 +98,6 @@ public:
 
 	// Jump override to fix buggy UE code
 	virtual void Jump() override;
-
-	//virtual void Crouch();
-	virtual void EnterCover();
 
 	//UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
 	//bool IsInCover(); // Getter for cover state
@@ -50,32 +115,47 @@ public:
 
 	float AngleBetween(FVector a, FVector b);
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category=Custom)
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, replicated, Category=Custom)
 	bool InCoverCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	bool CrouchedCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	bool CoverFacingRightCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	bool IsDashingCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	bool IsPoppedOutCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	bool IsAimingCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	bool IsDeadCPP = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	float AimPitchCPP = 0.0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Custom)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	float AimYawCPP = 0.0;
+
+	UPROPERTY(EditAnywhere)
+	float RunSpeed = 0.0;
+
+	UPROPERTY(EditAnywhere)
+	float WalkSpeed = 0.0;
+
+	UPROPERTY(Replicated)
+	FVector CurrentCoverDirection;
+
+	UPROPERTY(Replicated)
+	FVector DashDirection;
+
+	UPROPERTY(Replicated)
+	bool Dashing = false;
 
 	// BP Editor Objects
 	
@@ -90,7 +170,6 @@ public:
 private:
 	bool Running = false;
 	bool RunKeyPressed = false;
-	bool Dashing = false;
 	bool Aiming = false;
 	bool OnGround = false;
 	bool OnEdgeLeft = false;
@@ -98,16 +177,14 @@ private:
 	bool EdgeAdjustedLeft = false;
 	bool EdgeAdjustedRight = false;
 
-	FVector CurrentCoverDirection;
 	FVector LastFramePosition;
-	FVector DashDirection;
-
-	float RunSpeed = 0.0;
-	float WalkSpeed = 0.0;
 
 	int EnterCoverTimer = 0;
 	int DashTimer = 0;
 	int DashCooldownTimer = 0;
+
+	int NetworkTickUpdateTimer = 0; //Counter for network updates
+	int NetworkTickUpdateFrequency = 10; //Time in ticks between network update pushes
 
 	// Number of frames to dash, when dash is executed
 	UPROPERTY(EditAnywhere)
@@ -159,16 +236,15 @@ private:
 	int MaxCoverAngle = 30; // The angle at which movement into a cover wall will result in entering cover
 
 	UCapsuleComponent* MyCapsule = nullptr;
+
+	UPROPERTY(Replicated)
 	UCharacterMovementComponent* MyMove = nullptr;
 
-	void StickToCover();
 	bool CheckIsMovementAllowed(FVector Direction, float Value);
 	bool IsCoverStandable();
 
 	void UpdateCamera();
 	void UpdateAiming();
-
-	void Die();
 
 
 protected:
@@ -178,16 +254,6 @@ protected:
 
 	/** Called for side to side input */
 	void MoveRight(float Value);
-
-	void StartRunning();
-	void StartWalking();
-
-	void ExitCover();
-	void StartAiming();
-	void StopAiming();
-	void StartDash();
-	void StopDash();
-	void ExecuteDash();
 
 	/** 
 	 * Called via input to turn at a given rate. 
