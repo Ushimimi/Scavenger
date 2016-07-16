@@ -115,6 +115,15 @@ public:
 
 	float AngleBetween(FVector a, FVector b);
 
+	UPROPERTY(EditAnywhere, Category = Custom)
+	FVector2D CrosshairLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Custom)
+	FVector CrosshairLocationCPP;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Custom)
+	FVector CrosshairRayCPP;
+
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, replicated, Category=Custom)
 	bool InCoverCPP = false;
 
@@ -142,6 +151,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
 	float AimYawCPP = 0.0;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, replicated, Category = Custom)
+	bool Running = false;
+
 	UPROPERTY(EditAnywhere)
 	float RunSpeed = 0.0;
 
@@ -166,9 +178,9 @@ public:
 	// Object Pointers
 
 	AGun* EquippedWeapon;
+	APlayerController* MyPC;
 
 private:
-	bool Running = false;
 	bool RunKeyPressed = false;
 	bool Aiming = false;
 	bool OnGround = false;
@@ -225,6 +237,10 @@ private:
 	//Amount of offset to apply (reversed for left side) when aiming
 	UPROPERTY(EditAnywhere)
 	float AimOffsetAmount = 50.0;
+
+	//How far to trace target-finder ray
+	UPROPERTY(EditAnywhere)
+	float AimDistance = 500.0;
 
 	float TargetAimOffsetAmount = 0.0;
 	float CameraTrackSpeed = 8.0;
